@@ -1,0 +1,165 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{mycats}[2024/01/15]
+
+%Paquetes necesarios
+\RequirePackage{mathtools}
+\RequirePackage{fontspec}
+\RequirePackage[warnings-off={mathtools-colon,mathtools-overbracket},mathrm=sym]{unicode-math}
+\RequirePackage{tikz}
+\usetikzlibrary{calc,cd,arrows,arrows.meta}
+\tikzcdset{arrow style=tikz, diagrams={>={Classical TikZ Rightarrow[]}}}
+%\tikzcdset{arrow style={math font}}
+%____________________________________________________
+
+
+%Categorías, Topos, Estructuras,...
+\ExplSyntaxOn
+\NewDocumentCommand{\defset}{mmm}
+ {
+  \myab_makeabbrev:nnn { #1 } { #2 } { #3 }
+ }
+
+\cs_new_protected:Npn \myab_makeabbrev:nnn #1 #2 #3
+ {
+  \clist_map_inline:nn { #3 }
+   {
+    \cs_new_protected:cpn { #2 } { #1 { ##1 } }
+   }
+ }
+\ExplSyntaxOff
+
+\defset{\symsfit}{cat#1}%
+{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z}  %cats peques
+\defset{\symscr}{topos#1}%
+{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z}  %topos
+\defset{\symfrak}{est#1}%
+{A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z}  %estructuras
+
+%____________________________________________________
+
+
+%Pregavillas
+\NewDocumentCommand{\pg}{ s m O{} }    %pregavillas Grothendieck
+{
+  \IfBooleanTF{#1}
+  { \widehat{\symsf{#2}\op}_{#3} }     %estrella->op, se puede trucar
+  { \widehat{\symsf{#2}}_{#3} }        %normal->sin op, se puede trucar
+}
+\NewDocumentCommand{\pge}{ s m O{} }   %pregavillas exponencial
+{
+  \IfBooleanTF{#1}
+  { \cramped{\con^{#2_{#3}}} }         %estrella->op, se puede trucar
+  { \cramped{\con^{#2\op_{#3}}} }      %normal->sin op, se puede trucar
+}
+%____________________________________________________
+
+
+%Gavillas
+\newcommand*{\subind}[2]{#1_{#2}}
+\ExplSyntaxOn
+\clist_new:N \l_mysh_sh
+\NewDocumentCommand{\gav}{sm}{
+  \clist_set:Nn \l_mysh_sh {#2}
+  \IfBooleanTF{#1}
+  {\gavi(\clist_use:Nn \l_mysh_sh { , })}
+  {\subind{\clist_item:Nn \l_mysh_sh {1}}{\clist_item:Nn \l_mysh_sh {2}}}
+}
+%____________________________________________________
+
+
+%Otras categorías
+\newcommand*{\con}{\symsfit{Con}}  %conjuntos
+\newcommand*{\gru}{\symsfit{Gru}}  %grupos
+\newcommand*{\est}{\symsfit{Top}}  %espacios topológicos
+\newcommand*{\esv}{\symsfit{Vec}}  %espacios vectoriales
+\newcommand*{\mo}{\symsfit{Mod}}   %módulos
+\newcommand*{\alg}{\symsfit{Alg}}  %álgebras
+\newcommand*{\op}{^{\symsf{op}}}   %opuesta
+%____________________________________________________
+
+
+%Operadores
+\DeclareMathOperator{\dom}{dom}    %dominio
+\DeclareMathOperator{\cod}{cod}    %codominio
+\DeclareMathOperator{\id}{id}      %identidad
+\DeclareMathOperator{\im}{im}      %imagen
+\DeclareMathOperator{\gavi}{Gav}   %gavilla (auxiliar)
+
+\newcommand*{\true}{\top}          %verdadero
+\newcommand*{\false}{\perp}        %falso
+\newcommand*{\ev}{\symup{ev}}      %evaluación
+%____________________________________________________
+
+
+%Delimitadores (mathtools)
+\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}        %valor absoluto
+\DeclarePairedDelimiter{\nom}{\ulcorner}{\urcorner}  %nombre
+\DeclarePairedDelimiter{\fami}{\langle}{\rangle}     %familias
+\DeclarePairedDelimiter{\pair}{\lparen}{\rparen}     %par ordenado
+\DeclarePairedDelimiter{\vb}{\lBrack}{\rBrack}       %valor booleano
+\DeclarePairedDelimiter{\norm}{\lVert}{\rVert}       %norma
+
+%conjuntos
+\newcommand{\st}{}
+\newcommand{\SetSymbol}[1][]{%
+\nonscript\:#1\vert
+\allowbreak
+\nonscript\:
+\mathopen{}}
+\DeclarePairedDelimiterX\set[1]\{\}{%
+\renewcommand\st{\SetSymbol[\delimsize]}
+#1
+}
+%____________________________________________________
+
+
+%Cocientes
+\NewDocumentCommand{\quotient}{ m m }
+{{\left.\raisebox{.2ex}{\ensuremath{#1}}\middle/\raisebox{-.5ex}{\ensuremath{#2}}\right.}}
+
+%Rebanada
+\ExplSyntaxOn
+\clist_new:N \l_myq_q
+\NewDocumentCommand{\slice}{ m }
+{
+  \clist_set:Nn \l_myq_q {#1}
+  \quotient{\clist_item:Nn \l_myq_q {1}}{\clist_item:Nn \l_myq_q {2}}
+}
+
+%Coma
+\NewDocumentCommand{\comma}{ m }
+{
+  \clist_set:Nn \l_myq_q {#1}
+  {\clist_item:Nn \l_myq_q {1}}\mathrel{\downarrow}{\clist_item:Nn \l_myq_q {2}}
+}
+\ExplSyntaxOff
+%_______________________________________________________
+
+
+%Flechas con tikzcd en el texto
+\NewDocumentCommand{\fun}{ s O{} m O{} m O{-1em}}
+{
+  \IfBooleanTF{#1}
+  {\begin{tikzcd}[cramped, ampersand replacement = \&]
+		{#4\colon}{#3}\ar[#2]{r} \&[#6] #5
+	\end{tikzcd}}
+  {\begin{tikzcd}[cramped, ampersand replacement = \&]
+		#3\ar[#2]{r}{#4} \&[#6] #5
+	\end{tikzcd}}
+}
+%_______________________________________________________
+
+
+%"colon alreves"
+\newcommand\noloc{%
+  \nobreak
+  \mspace{6mu plus 1mu}
+  {:}
+  \nonscript\mkern-\thinmuskip
+  \mathpunct{}
+  \mspace{2mu}
+}
+
+
+
+\endinput
